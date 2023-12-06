@@ -7,25 +7,25 @@ import os
 # also it will convert &amp; to a "&"
 # this  SHOULD account for NULL values, it will create an empty string to append to the list
 
-# you will need to have or create the "inputs" and "outputs" folders in the same folder as this code
-# copy the html into a .txt file inside the inputs folder
+# you will need to have or create the "input" and "output" folders in the same folder as this code
+# copy the html into a .txt file inside the input folder
 # follow prompts in CLI
 
 
 
 def html_to_csv():
-    file_list = os.listdir("inputs")                                                        
-    new_text = input(f"\n\nType file name from list to use: \n{file_list}\n\t")                 # lists the files that are in the inputs folder for easier selection by user
+    file_list = os.listdir("input")                                                        
+    new_text = input(f"\n\nType file name from list to use: \n{file_list}\n\t")                 # lists the files that are in the input folder for easier selection by user
     file_name_check = True
-    while file_name_check:                                                                      # this loop makes sure that file name typed exists in the inputs folder
+    while file_name_check:                                                                      # this loop makes sure that file name typed exists in the input folder
         if file_list.count(new_text) > 0:
             file_name_check = False
         else:
-            print("\n**********     FILE NOT IN 'inputs' FOLDER     **********")
+            print("\n**********     FILE NOT IN 'input' FOLDER     **********")
             new_text = input(f"\n\nType file name from list to use: \n{file_list}\n\t")            
     num_fields = int(input("How many fields (columns) are there?\n\t"))                          # the number of columns will be used later during the writing phase of the csv file
     try:
-        with open(("inputs/" + new_text), "r") as new_file:                                      # opens and reads the file converting the entirety to a string
+        with open(("input/" + new_text), "r") as new_file:                                      # opens and reads the file converting the entirety to a string
             s = str(new_file.read())         
             remove_new_lines = s.replace('\n', ' ')                                              # removes any new line escape sequences
             remove_tabs = remove_new_lines.replace('\t',' ')                                     # removes any tab escape sequences
@@ -79,8 +79,8 @@ def html_to_csv():
         print("could not find the file")
         return        
     try:
-        output_list = os.listdir("outputs")                                                                                                 # stores the list of files in "outputs"
-        output_file_name = input(f"\n\n**********     CURRENT FILES IN 'outputs':\n\t{output_list}\n\nNew file name:\n\t")                  # prints the list of files in the "outputs" folder and asks for the file name you wish to be used
+        output_list = os.listdir("output")                                                                                                 # stores the list of files in "output"
+        output_file_name = input(f"\n\n**********     CURRENT FILES IN 'output':\n\t{output_list}\n\nNew file name:\n\t")                  # prints the list of files in the "output" folder and asks for the file name you wish to be used
         new_file_check = True                                                                                                               # holds boolean value for the while loop
         while new_file_check:                                                                                                               # the loop checks the validity of the file name
             file_ext_check = output_file_name[-4:]                                                                                          # holds the last 4 characters of the file name that was input
@@ -92,11 +92,11 @@ def html_to_csv():
                 if keep_name.lower() == "y":                                                                                                # checks user input 
                     new_file_check = False                                                                                                  # if "y" the new_file_check is complete
                 else:                                                                                                                       # if "n" or anything else 
-                    output_file_name = input(f"\n\n**********     CURRENT FILES IN 'outputs':\n\t{output_list}\n\nNew file name:\n\t")      # this prompts user for a new file name
+                    output_file_name = input(f"\n\n**********     CURRENT FILES IN 'output':\n\t{output_list}\n\nNew file name:\n\t")      # this prompts user for a new file name
                     continue                                                                                                                # starts file name checker loop again
             else:                                                                                                                           # if the file name is new
                 new_file_check = False                                                                                                      # sets new_file_check to False to end loop
-        with open(("outputs/"+ output_file_name),"w") as f:                                                                                 # creates or opens a csv file of the name from output_file_name
+        with open(("output/"+ output_file_name),"w") as f:                                                                                 # creates or opens a csv file of the name from output_file_name
             fields = []                                                                                                                     # stores the strings to be used as the column / field names
             for num in range(num_fields):                                                                                                   # loops over listified
                 fields.append(listified[num])                                                                                               # appends the strings to be used as the column / field names to fields
