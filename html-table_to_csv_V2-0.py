@@ -13,71 +13,72 @@ import os
 
 
 
-def html_to_csv():
-    file_list = os.listdir("input")                                                        
-    new_text = input(f"\n\nType file name from list to use: \n{file_list}\n\t")                 # lists the files that are in the input folder for easier selection by user
-    file_name_check = True
-    while file_name_check:                                                                      # this loop makes sure that file name typed exists in the input folder
-        if file_list.count(new_text) > 0:
-            file_name_check = False
-        else:
-            print("\n**********     FILE NOT IN 'input' FOLDER     **********")
-            new_text = input(f"\n\nType file name from list to use: \n{file_list}\n\t")            
-    num_fields = int(input("How many fields (columns) are there?\n\t"))                          # the number of columns will be used later during the writing phase of the csv file
-    try:
-        with open(("input/" + new_text), "r") as new_file:                                      # opens and reads the file converting the entirety to a string
-            s = str(new_file.read())         
-            remove_new_lines = s.replace('\n', ' ')                                              # removes any new line escape sequences
-            remove_tabs = remove_new_lines.replace('\t',' ')                                     # removes any tab escape sequences
-            listified = []                                                                       # this will be list of all words or NULL values to be entered into the csv
-            word = ""                                                                            # holds the word to be added to listified
-            discard = ""                                                                         # holds the characters that will be removed from the txt file  example:  <td>
-            counter = 0                                                                          # used to create sub strings of s to help find NULL values
-            for char in remove_tabs:                                                             # loop over all of the chars in the string - remove_tabs
-                if char == "<":                                                                  # starts looking for starting character in an HTML tag
-                    counter += 1                                                                 # increases counter 
-                    if len(word) > 0:                                                            # checks for if a word has been assembled to add to the list
-                        if "&amp;" in word:                                                      # looks for the HTML character reference for an ampersand and replaces it with the character "&" (other character references could be added)
-                            fix_char = word.replace("&amp;", "&")                                # the replacement happens here
-                            listified.append(fix_char)                                           # corrected string is added to listified
-                        else:
-                            listified.append(word)                                               # otherwise just the word needs to be appended to listified
-                    #print(f"New Discard start\t\t{counter}\t{discard}\t{word}")
-                    word = ""                                                                    # word gets reset
-                    discard += char                                                              # the discard string starts being built
-                elif len(discard) > 0 and char != ">":                                           # this is to build the discard string
-                    counter += 1                                                                 # increases counter to be used as an index later
-                    discard += char                                                              # adds current char to discard
-                    #print(f"continue to discard\t\t{counter}\t{discard}\t{word}")
-                elif char == ">" and word == "":                                                 # find the end of a discard string and checks for a NULL value 
-                    counter += 1                                                                 # increass counter to be used as an index later
-                    discard += char                                                              # adds current char to the discard string
-                    sub_s = discard[:1] + "/" + discard[1:]                                      # creates the closing tag version of the discard string
-                    sub_s_2 = remove_tabs[counter:counter + len(sub_s)]                          # finds the string in remove_tabs at the current counter and plus the length of sub_s
-                    #print("Sub_s: ",sub_s,"\t\tSub_s_2: ",sub_s_2)
-                    if sub_s == sub_s_2 and sub_s != "</tr>":                                    # checks for similarity of sub_s and sub_s_2 and makes sure that it isn't just an empty row in the table
-                        listified.append("")                                                     # adds an empty string to listified, which can be translated to a NULL value by a DBMS
-                    discard = ""                                                                 # discard gets reset
-                    #print(f"End discard\t\t{counter}\t{discard}\t{word}")
-                elif char == " " and word == "":                                                 # this will ignore blank spaces when building discard strings
-                    counter += 1                                                                 # increments the counter
-                    #print(f"Blank space between rows\t\t{counter}\t{discard}\t{word}")
-                    continue                                                                     # continues the loop again
-                elif discard == "" and counter > 0:                                              # checks if discard is empty and that this isn't the first character of the txt file
-                    counter += 1                                                                 # increments counter
-                    word += char                                                                 # builds the word that will be added to listified
-                    #print(f"Building new word\t\t{counter}\t{discard}\t{word}")
-                else:                                                                            # helps with diagnostics for why the program failed to parse the txt file
-                    print(f'I ran {counter} times. Then I broke.')                               # can give you an idea of where the parser failed
-                    return                                                                       # stops the loop
-            for index in range(0,num_fields):                                                    # loops over the strings in listified that will become the column names
-                listified[index] = listified[index].lower()                                      # changes the string to lower case
-                listified[index] = listified[index].replace(" ", "_")                            # joins the words with an "_" to remove spaces
-            #print(f"\n\n{listified}\n\n")
-            print(f"html_to_csv parser ran {counter} times and is complete\n\n")                 # lets the user know the parser is finished
-    except:                                                                                      # another exit point for the program is the file could not be found
-        print("could not find the file")
-        return        
+def html_to_csv(listified=[], num_fields=0):
+    if len(listified) == 0:
+        file_list = os.listdir("input")                                                        
+        new_text = input(f"\n\nType file name from list to use: \n{file_list}\n\t")                 # lists the files that are in the input folder for easier selection by user
+        file_name_check = True
+        while file_name_check:                                                                      # this loop makes sure that file name typed exists in the input folder
+            if file_list.count(new_text) > 0:
+                file_name_check = False
+            else:
+                print("\n**********     FILE NOT IN 'input' FOLDER     **********")
+                new_text = input(f"\n\nType file name from list to use: \n{file_list}\n\t")            
+        num_fields = int(input("How many fields (columns) are there?\n\t"))                          # the number of columns will be used later during the writing phase of the csv file
+        try:
+            with open(("input/" + new_text), "r") as new_file:                                      # opens and reads the file converting the entirety to a string
+                s = str(new_file.read())         
+                remove_new_lines = s.replace('\n', ' ')                                              # removes any new line escape sequences
+                remove_tabs = remove_new_lines.replace('\t',' ')                                     # removes any tab escape sequences
+                listified = []                                                                       # this will be list of all words or NULL values to be entered into the csv
+                word = ""                                                                            # holds the word to be added to listified
+                discard = ""                                                                         # holds the characters that will be removed from the txt file  example:  <td>
+                counter = 0                                                                          # used to create sub strings of s to help find NULL values
+                for char in remove_tabs:                                                             # loop over all of the chars in the string - remove_tabs
+                    if char == "<":                                                                  # starts looking for starting character in an HTML tag
+                        counter += 1                                                                 # increases counter 
+                        if len(word) > 0:                                                            # checks for if a word has been assembled to add to the list
+                            if "&amp;" in word:                                                      # looks for the HTML character reference for an ampersand and replaces it with the character "&" (other character references could be added)
+                                fix_char = word.replace("&amp;", "&")                                # the replacement happens here
+                                listified.append(fix_char)                                           # corrected string is added to listified
+                            else:
+                                listified.append(word)                                               # otherwise just the word needs to be appended to listified
+                        #print(f"New Discard start\t\t{counter}\t{discard}\t{word}")
+                        word = ""                                                                    # word gets reset
+                        discard += char                                                              # the discard string starts being built
+                    elif len(discard) > 0 and char != ">":                                           # this is to build the discard string
+                        counter += 1                                                                 # increases counter to be used as an index later
+                        discard += char                                                              # adds current char to discard
+                        #print(f"continue to discard\t\t{counter}\t{discard}\t{word}")
+                    elif char == ">" and word == "":                                                 # find the end of a discard string and checks for a NULL value 
+                        counter += 1                                                                 # increass counter to be used as an index later
+                        discard += char                                                              # adds current char to the discard string
+                        sub_s = discard[:1] + "/" + discard[1:]                                      # creates the closing tag version of the discard string
+                        sub_s_2 = remove_tabs[counter:counter + len(sub_s)]                          # finds the string in remove_tabs at the current counter and plus the length of sub_s
+                        #print("Sub_s: ",sub_s,"\t\tSub_s_2: ",sub_s_2)
+                        if sub_s == sub_s_2 and sub_s != "</tr>":                                    # checks for similarity of sub_s and sub_s_2 and makes sure that it isn't just an empty row in the table
+                            listified.append("")                                                     # adds an empty string to listified, which can be translated to a NULL value by a DBMS
+                        discard = ""                                                                 # discard gets reset
+                        #print(f"End discard\t\t{counter}\t{discard}\t{word}")
+                    elif char == " " and word == "":                                                 # this will ignore blank spaces when building discard strings
+                        counter += 1                                                                 # increments the counter
+                        #print(f"Blank space between rows\t\t{counter}\t{discard}\t{word}")
+                        continue                                                                     # continues the loop again
+                    elif discard == "" and counter > 0:                                              # checks if discard is empty and that this isn't the first character of the txt file
+                        counter += 1                                                                 # increments counter
+                        word += char                                                                 # builds the word that will be added to listified
+                        #print(f"Building new word\t\t{counter}\t{discard}\t{word}")
+                    else:                                                                            # helps with diagnostics for why the program failed to parse the txt file
+                        print(f'I ran {counter} times. Then I broke.')                               # can give you an idea of where the parser failed
+                        return                                                                       # stops the loop
+                for index in range(0,num_fields):                                                    # loops over the strings in listified that will become the column names
+                    listified[index] = listified[index].lower()                                      # changes the string to lower case
+                    listified[index] = listified[index].replace(" ", "_")                            # joins the words with an "_" to remove spaces
+                #print(f"\n\n{listified}\n\n")
+                print(f"html_to_csv parser ran {counter} times and is complete\n\n")                 # lets the user know the parser is finished
+        except:                                                                                      # another exit point for the program is the file could not be found
+            print("could not find the file")
+            return        
     try:
         output_list = os.listdir("output")                                                                                                 # stores the list of files in "output"
         output_file_name = input(f"\n\n**********     CURRENT FILES IN 'output':\n\t{output_list}\n\nNew file name:\n\t")                  # prints the list of files in the "output" folder and asks for the file name you wish to be used
@@ -124,6 +125,196 @@ def html_to_csv():
     except:
         print("I wasn't able to populate the csv file.")                                                                                    # lets the user know an error has occurred during the writing process
 
-
-html_to_csv()                                                                                                                               # runs the function html_to_csv()
+if __name__ == "__main__":
+    listified = [
+        
+        "Effective Date",
+        "Posted Date",
+        "Description",
+        "Amount",
+        "Balance",
+        "02/27/2025",
+        "02/27/2025",
+        "ACH PMT",
+        "$501.15",
+        "$16,631.95",
+        "01/27/2025",
+        "01/27/2025",
+        "ACH PMT",
+        "$501.15",
+        "$17,040.62",
+        "12/27/2024",
+        "12/27/2024",
+        "ACH PMT",
+        "$501.15",
+        "$17,447.12",
+        "11/27/2024",
+        "11/27/2024",
+        "ACH PMT",
+        "$501.15",
+        "$17,854.75",
+        "10/25/2024",
+        "10/25/2024",
+        "ACH PMT",
+        "$501.15",
+        "$18,250.75",
+        "09/27/2024",
+        "09/27/2024",
+        "ACH PMT",
+        "$501.15",
+        "$18,660.68",
+        "08/27/2024",
+        "08/27/2024",
+        "ACH PMT",
+        "$501.15",
+        "$19,058.68",
+        "07/26/2024",
+        "07/26/2024",
+        "ACH PMT",
+        "$501.15",
+        "$19,451.15",
+        "06/27/2024",
+        "06/27/2024",
+        "ACH PMT",
+        "$501.15",
+        "$19,851.80",
+        "05/24/2024",
+        "05/24/2024",
+        "ACH PMT",
+        "$501.15",
+        "$20,232.84",
+        "04/26/2024",
+        "04/26/2024",
+        "ACH PMT",
+        "$501.15",
+        "$20,633.13",
+        "03/27/2024",
+        "03/27/2024",
+        "ACH PMT",
+        "$501.15",
+        "$21,024.15",
+        "02/27/2024",
+        "02/27/2024",
+        "ACH PMT",
+        "$501.15",
+        "$21,416.87",
+        "01/26/2024",
+        "01/26/2024",
+        "ACH PMT",
+        "$501.15",
+        "$21,796.24",
+        "12/27/2023",
+        "12/27/2023",
+        "ACH PMT",
+        "$501.15",
+        "$22,181.16",
+        "11/27/2023",
+        "11/27/2023",
+        "ACH PMT",
+        "$501.15",
+        "$22,563.81",
+        "10/27/2023",
+        "10/27/2023",
+        "ACH PMT",
+        "$501.15",
+        "$22,940.46",
+        "09/27/2023",
+        "09/27/2023",
+        "ACH PMT",
+        "$501.15",
+        "$23,319.14",
+        "08/25/2023",
+        "08/25/2023",
+        "ACH PMT",
+        "$501.15",
+        "$23,683.45",
+        "07/27/2023",
+        "07/27/2023",
+        "ACH PMT",
+        "$501.15",
+        "$24,062.44",
+        "06/27/2023",
+        "06/27/2023",
+        "ACH PMT",
+        "$501.15",
+        "$24,435.26",
+        "05/26/2023",
+        "05/26/2023",
+        "ACH PMT",
+        "$501.15",
+        "$24,797.49",
+        "04/27/2023",
+        "04/27/2023",
+        "ACH PMT",
+        "$501.15",
+        "$25,170.84",
+        "03/27/2023",
+        "03/27/2023",
+        "ACH PMT",
+        "$501.15",
+        "$25,533.42",
+        "02/27/2023",
+        "02/27/2023",
+        "ACH PMT",
+        "$501.15",
+        "$25,907.58",
+        "01/27/2023",
+        "01/27/2023",
+        "ACH PMT",
+        "$550.00",
+        "$26,266.18",
+        "12/27/2022",
+        "12/27/2022",
+        "ACH PMT",
+        "$550.00",
+        "$26,671.42",
+        "11/30/2022",
+        "11/30/2022",
+        "ACH PMT",
+        "$550.00",
+        "$27,093.36",
+        "10/27/2022",
+        "10/27/2022",
+        "ACH PMT",
+        "$550.00",
+        "$27,479.79",
+        "09/27/2022",
+        "09/27/2022",
+        "ACH PMT",
+        "$550.00",
+        "$27,883.35",
+        "08/29/2022",
+        "08/29/2022",
+        "ACH PMT",
+        "$550.00",
+        "$28,289.72",
+        "07/27/2022",
+        "07/27/2022",
+        "ACH PMT",
+        "$550.00",
+        "$28,674.06",
+        "06/28/2022",
+        "06/28/2022",
+        "ACH PMT",
+        "$550.00",
+        "$29,076.44",
+        "05/31/2022",
+        "05/31/2022",
+        "ACH PMT",
+        "$550.00",
+        "$29,481.93",
+        "05/07/2022",
+        "05/10/2022",
+        "CHECKPOINT",
+        "$0.00",
+        "$29,671.28",
+        "05/07/2022",
+        "05/10/2022",
+        "FINANCED FEES",
+        "$235.00",
+        "$29,906.28",
+        ]
+    
+    # html_to_csv(listified, 5)                                                                                                                               # runs the function html_to_csv()
+    html_to_csv()
 
